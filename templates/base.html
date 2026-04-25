@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Agent Comms{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js" integrity="sha512-5Hs3ut3lE/XBnYNuOSQ3oAGqI2nqDN+8H7QkLPGdvyJ8BsC+dwADYGdJ+jM8tq4sC1VxVcBc8PQZB5CPFQmMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <a href="{{ url_for('dashboard.index') }}" class="nav-logo">
+                <span class="nav-logo-icon">◈</span>
+                <span class="nav-logo-text">Agent Comms</span>
+            </a>
+        </div>
+        <ul class="nav-links">
+            <li><a href="{{ url_for('dashboard.index') }}" class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">Dashboard</a></li>
+            <li><a href="{{ url_for('dashboard.agents_list') }}" class="nav-link {% if request.endpoint == 'dashboard.agents_list' %}active{% endif %}">Agents</a></li>
+            <li><a href="{{ url_for('dashboard.messages_list') }}" class="nav-link {% if request.endpoint == 'dashboard.messages_list' %}active{% endif %}">Messages</a></li>
+            <li><a href="{{ url_for('dashboard.conversations_list') }}" class="nav-link {% if request.endpoint == 'dashboard.conversations_list' %}active{% endif %}">Conversations</a></li>
+        </ul>
+        <div class="nav-status" id="socket-status">
+            <span class="status-indicator offline" id="conn-indicator"></span>
+            <span class="status-text" id="conn-text">Disconnected</span>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -19,7 +19,20 @@ def create_app(config_class=Config):
         _init_models()
         db.create_all()
 
+    # Register API blueprint
+    _register_blueprints(app)
+
     return app
+
+
+def _register_blueprints(app):
+    """Register all application blueprints."""
+    try:
+        from api import api_bp
+
+        app.register_blueprint(api_bp)
+    except ImportError:
+        pass  # api module not yet created
 
 
 def _init_models():

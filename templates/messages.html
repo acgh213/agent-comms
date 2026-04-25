@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Messages — Agent Comms{% endblock %}
+
+{% block content %}
+<div class="messages-page">
+    <header class="page-header">
+        <h1>Messages</h1>
+        <p class="page-subtitle">Message Queue &amp; History</p>
+    </header>
+
+    <!-- Filter Tabs -->
+    <nav class="filter-tabs" id="message-filters">
+        <button class="filter-tab active" data-filter="all">All</button>
+        <button class="filter-tab" data-filter="unread">Unread</button>
+        <button class="filter-tab" data-filter="sent">Sent</button>
+        <button class="filter-tab" data-filter="received">Received</button>
+    </nav>
+
+    <!-- Message Cards -->
+    <section class="message-list" id="message-list">
+        {% if messages %}
+        <ul class="message-cards">
+            {% for msg in messages %}
+            <li class="message-card {% if msg.read_at is none and msg.status == 'sent' %}message-unread{% endif %}"
+                data-filter-type="{% if msg.from_agent_id == request.agent_id or not request.agent_id %}sent{% else %}received{% endif %}"
+                data-read="{% if msg.read_at %}true{% else %}false{% endif %}"
+                data-message-id="{{ msg.id }}">
+                <div class="message-card-main">
+                    <div class="msg-sender-avatar" style="background: {{ msg.sender.avatar_color or '#555' }};">
+                        {{ msg.sender.name[0] | upper }}
+                    </div>
+                    <div class="msg-content">
+                        <div class="msg-header">
+                            <strong class="msg-sender">{{ msg.sender.name }}</strong>
+                            <span class="msg-arrow">→</span>
+                            <span class="msg-receiver">{{ msg.receiver.name }}</span>
+                            <span class="msg-time">{{ msg.created_at | timesince }}</span>
+                        </div>
+                        <div class="msg-subject">{{ msg.subject or '(no subject)' }}</div>
+                        <div class="msg-body-preview">{{ msg.body | truncate(120) if msg.body else '' }}</div>
+                        <div class="msg-meta-row">
+                            <span class="msg-priority priority-{{ msg.priority }}">{{ msg.priority | title }}</span>
+                            <span class="msg-status status-{{ msg.status }}">{{ msg.status | title }}</span>
+                            {% if msg.read_at %}
+                            <span class="msg-read-badge">Read {{ msg.read_at | timesince }}</span>
+                            {% endif %}
+                            {% if msg.acknowledged_at %}
+                            <span class="msg-ack-badge">✓ Acknowledged</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="message-card-actions">
+                    {% if msg.read_at is none %}
+                    <button class="btn btn-xs btn-outline mark-read-btn" data-msg-id="{{ msg.id }}">Mark Read</button>
+                    {% endif %}
+                    {% if msg.acknowledged_at is none %}
+                    <button class="btn btn-xs btn-outline acknowledge-btn" data-msg-id="{{ msg.id }}">Acknowledge</button>
+                    {% endif %}
+                    <a href="{{ url_for('dashboard.conversation_detail', conv_id=msg.conversation_id) }}" class="btn btn-xs btn-outline">View Thread</a>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-state">
+            <p>No messages found.</p>
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filter tabs
+    const tabs = document.querySelectorAll('.filter-tab');
+    const cards = document.querySelectorAll('.message-card');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            tabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            const filter = this.dataset.filter;
+            cards.forEach(card => {
+                if (filter === 'all') {
+                    card.style.display = '';
+                } else if (filter === 'unread') {
+                    card.style.display = card.dataset.read === 'false' ? '' : 'none';
+                } else if (filter === 'sent') {
+                    card.style.display = card.dataset.filterType === 'sent' ? '' : 'none';
+                } else if (filter === 'received') {
+                    card.style.display = card.dataset.filterType === 'received' ? '' : 'none';
+                }
+            });
+        });
+    });
+
+    // Mark as read
+    document.querySelectorAll('.mark-read-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const msgId = this.dataset.msgId;
+            fetch('{{ url_for("dashboard.mark_read_api", msg_id=0) }}'.replace('0', msgId), { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        const card = this.closest('.message-card');
+                        card.classList.remove('message-unread');
+                        card.dataset.read = 'true';
+                        this.remove();
+                    }
+                });
+        });
+    });
+
+    // Acknowledge
+    document.querySelectorAll('.acknowledge-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const msgId = this.dataset.msgId;
+            fetch('{{ url_for("dashboard.acknowledge_api", msg_id=0) }}'.replace('0', msgId), { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        this.textContent = '✓ Acknowledged';
+                        this.disabled = true;
+                    }
+                });
+        });
+    });
+});
+</script>
+{% endblock %}

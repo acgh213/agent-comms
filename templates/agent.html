@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}{{ agent.name }} — Agent Comms{% endblock %}
+
+{% block content %}
+<div class="agent-detail">
+    <div class="page-header">
+        <a href="{{ url_for('dashboard.agents_list') }}" class="btn btn-sm btn-back">← Back to Agents</a>
+    </div>
+
+    <!-- Agent Profile Card -->
+    <section class="agent-profile">
+        <div class="profile-avatar" style="background: {{ agent.avatar_color or '#555' }};">
+            {{ agent.name[0] | upper }}
+        </div>
+        <div class="profile-info">
+            <h1>{{ agent.name }}</h1>
+            <span class="profile-role">{{ agent.role }}</span>
+            <div class="profile-status">
+                <span class="status-dot {{ agent.status }}"></span>
+                <span>{{ agent.status | title }}</span>
+                {% if agent.last_seen %}
+                <span class="profile-last-seen">— Last seen {{ agent.last_seen | timesince }}</span>
+                {% endif %}
+            </div>
+            {% if agent.personality %}
+            <p class="profile-personality">{{ agent.personality }}</p>
+            {% endif %}
+            {% if agent.capabilities %}
+            <div class="profile-capabilities">
+                {% for cap in agent.capabilities %}
+                <span class="capability-tag">{{ cap }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <div class="agent-detail-grid">
+        <!-- Send Message Form -->
+        <section class="dashboard-section send-message-section">
+            <header class="section-header">
+                <h2>Send Message</h2>
+            </header>
+            <form id="send-message-form" class="message-form" data-agent-id="{{ agent.id }}">
+                <div class="form-group">
+                    <label for="msg-receiver">To</label>
+                    <select id="msg-receiver" class="form-select" required>
+                        <option value="">Select recipient...</option>
+                        {% for a in all_agents %}
+                        {% if a.id != agent.id %}
+                        <option value="{{ a.id }}">{{ a.name }}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="msg-subject">Subject</label>
+                    <input type="text" id="msg-subject" class="form-input" placeholder="Message subject" required>
+                </div>
+                <div class="form-group">
+                    <label for="msg-body">Message</label>
+                    <textarea id="msg-body" class="form-textarea" rows="4" placeholder="Type your message..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="msg-priority">Priority</label>
+                    <select id="msg-priority" class="form-select">
+                        <option value="low">Low</option>
+                        <option value="normal" selected>Normal</option>
+                        <option value="high">High</option>
+                        <option value="urgent">Urgent</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Send Message</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Message History -->
+        <section class="dashboard-section message-history-section">
+            <header class="section-header">
+                <h2>Message History</h2>
+            </header>
+            <div class="message-history" id="message-history">
+                {% if messages %}
+                <ul class="message-feed">
+                    {% for msg in messages %}
+                    <li class="message-feed-item {% if msg.from_agent_id == agent.id %}msg-sent{% else %}msg-received{% endif %}">
+                        <div class="msg-sender-avatar" style="background: {{ msg.sender.avatar_color or '#555' }};">
+                            {{ msg.sender.name[0] | upper }}
+                        </div>
+                        <div class="msg-content">
+                            <div class="msg-header">
+                                <strong class="msg-sender">{{ msg.sender.name }}</strong>
+                                <span class="msg-arrow">→</span>
+                                <span class="msg-receiver">{{ msg.receiver.name }}</span>
+                                <span class="msg-time">{{ msg.created_at | timesince }}</span>
+                            </div>
+                            <div class="msg-subject">{{ msg.subject }}</div>
+                            <div class="msg-body">{{ msg.body }}</div>
+                            <div class="msg-meta">
+                                <span class="msg-priority priority-{{ msg.priority }}">{{ msg.priority | title }}</span>
+                                <span class="msg-status">{{ msg.status | title }}</span>
+                                {% if msg.read_at %}
+                                <span class="msg-read">Read</span>
+                                {% endif %}
+                                {% if msg.acknowledged_at %}
+                                <span class="msg-acknowledged">Acknowledged</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="empty-state">
+                    <p>No messages yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+
+    <!-- Notes by this Agent -->
+    <section class="dashboard-section notes-section">
+        <header class="section-header">
+            <h2>Notes</h2>
+        </header>
+        <div class="notes-list" id="agent-notes">
+            {% if notes %}
+            <div class="notes-grid">
+                {% for note in notes %}
+                <div class="note-card {% if note.pinned %}note-pinned{% endif %}">
+                    <div class="note-header">
+                        <h3 class="note-title">{{ note.title }}</h3>
+                        {% if note.pinned %}
+                        <span class="note-pin-badge">📌</span>
+                        {% endif %}
+                    </div>
+                    <div class="note-body">{{ note.body | truncate(200) if note.body else '' }}</div>
+                    <div class="note-footer">
+                        {% if note.tags %}
+                        <div class="note-tags">
+                            {% for tag in note.tags %}
+                            <span class="note-tag">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <small class="note-time">{{ note.created_at | timesince }}</small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p>No notes from this agent.</p>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}

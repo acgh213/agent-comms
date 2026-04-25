@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — Agent Comms{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <header class="page-header">
+        <h1>Dashboard</h1>
+        <p class="page-subtitle">Agent Communication System Overview</p>
+    </header>
+
+    <!-- Stats Bar -->
+    <section class="stats-bar">
+        <div class="stat-card">
+            <span class="stat-number" id="stat-total-agents">{{ stats.total_agents }}</span>
+            <span class="stat-label">Total Agents</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number" id="stat-online-agents">{{ stats.online_agents }}</span>
+            <span class="stat-label">Online Now</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number" id="stat-unread-messages">{{ stats.unread_messages }}</span>
+            <span class="stat-label">Unread Messages</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number" id="stat-active-conversations">{{ stats.active_conversations }}</span>
+            <span class="stat-label">Active Conversations</span>
+        </div>
+    </section>
+
+    <div class="dashboard-grid">
+        <!-- Agent Status Cards -->
+        <section class="dashboard-section agents-section">
+            <header class="section-header">
+                <h2>Agents</h2>
+                <a href="{{ url_for('dashboard.agents_list') }}" class="btn btn-sm">View All</a>
+            </header>
+            <div class="agent-cards" id="agent-cards">
+                {% for agent in agents %}
+                <a href="{{ url_for('dashboard.agent_detail', agent_id=agent.id) }}" class="agent-card">
+                    <div class="agent-avatar" style="background: {{ agent.avatar_color or '#555' }};">
+                        {{ agent.name[0] | upper }}
+                    </div>
+                    <div class="agent-info">
+                        <span class="agent-name">{{ agent.name }}</span>
+                        <span class="agent-role">{{ agent.role }}</span>
+                    </div>
+                    <div class="agent-status-indicator">
+                        <span class="status-dot {{ agent.status }}" title="{{ agent.status | title }}"></span>
+                        <span class="status-label">{{ agent.status | title }}</span>
+                    </div>
+                    <div class="agent-last-seen">
+                        {% if agent.last_seen %}
+                        <small>{{ agent.last_seen | timesince }}</small>
+                        {% else %}
+                        <small>Never</small>
+                        {% endif %}
+                    </div>
+                </a>
+                {% else %}
+                <div class="empty-state">
+                    <p>No agents registered yet.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- Recent Messages Feed -->
+        <section class="dashboard-section messages-section">
+            <header class="section-header">
+                <h2>Recent Messages</h2>
+                <a href="{{ url_for('dashboard.messages_list') }}" class="btn btn-sm">View All</a>
+            </header>
+            <div class="recent-messages" id="recent-messages">
+                {% if recent_messages %}
+                <ul class="message-feed">
+                    {% for msg in recent_messages %}
+                    <li class="message-feed-item">
+                        <div class="msg-sender-avatar" style="background: {{ msg.sender.avatar_color or '#555' }};">
+                            {{ msg.sender.name[0] | upper }}
+                        </div>
+                        <div class="msg-content">
+                            <div class="msg-header">
+                                <strong class="msg-sender">{{ msg.sender.name }}</strong>
+                                <span class="msg-arrow">→</span>
+                                <span class="msg-receiver">{{ msg.receiver.name }}</span>
+                                <span class="msg-time">{{ msg.created_at | timesince }}</span>
+                            </div>
+                            <div class="msg-preview">
+                                <span class="msg-subject">{{ msg.subject or '(no subject)' }}</span>
+                                <span class="msg-body-preview">{{ msg.body | truncate(80) if msg.body else '' }}</span>
+                            </div>
+                        </div>
+                        {% if msg.read_at is none and msg.status == 'sent' %}
+                        <span class="msg-unread-dot" title="Unread"></span>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="empty-state">
+                    <p>No messages yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+
+    <!-- Active Conversations -->
+    <section class="dashboard-section conversations-section">
+        <header class="section-header">
+            <h2>Active Conversations</h2>
+            <a href="{{ url_for('dashboard.conversations_list') }}" class="btn btn-sm">View All</a>
+        </header>
+        <div class="conversation-list" id="active-conversations">
+            {% if conversations %}
+            <ul class="conv-list">
+                {% for conv in conversations %}
+                <li class="conv-list-item">
+                    <a href="{{ url_for('dashboard.conversation_detail', conv_id=conv.id) }}" class="conv-link">
+                        <div class="conv-avatars">
+                            {% for p in conv.participants[:3] %}
+                            <span class="conv-avatar-sm" style="background: {{ p.avatar_color or '#555' }};">{{ p.name[0] | upper }}</span>
+                            {% endfor %}
+                            {% if conv.participants | length > 3 %}
+                            <span class="conv-avatar-sm conv-avatar-more">+{{ conv.participants | length - 3 }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="conv-info">
+                            <span class="conv-title">{{ conv.title }}</span>
+                            <span class="conv-participants">{{ conv.participants | map(attribute='name') | join(', ') }}</span>
+                        </div>
+                        <div class="conv-meta">
+                            <span class="conv-msg-count">{{ conv.messages | length }} msgs</span>
+                            <span class="conv-time">{{ conv.updated_at | timesince }}</span>
+                        </div>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="empty-state">
+                <p>No conversations yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

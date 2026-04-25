@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}{{ conversation.title }} — Agent Comms{% endblock %}
+
+{% block content %}
+<div class="conversation-detail">
+    <div class="page-header">
+        <a href="{{ url_for('dashboard.conversations_list') }}" class="btn btn-sm btn-back">← Back to Conversations</a>
+    </div>
+
+    <!-- Conversation Header -->
+    <section class="conversation-header">
+        <h1>{{ conversation.title }}</h1>
+        <div class="conversation-meta">
+            <span class="conv-msg-count">{{ messages | length }} messages</span>
+            <span class="conv-created">Started {{ conversation.created_at | timesince }}</span>
+        </div>
+    </section>
+
+    <div class="conversation-layout">
+        <!-- Message Thread -->
+        <section class="message-thread" id="message-thread">
+            {% if messages %}
+            <div class="thread-messages">
+                {% for msg in messages %}
+                <div class="thread-message {% if loop.index == messages | length %}thread-message-latest{% endif %}" id="msg-{{ msg.id }}">
+                    <div class="thread-avatar" style="background: {{ msg.sender.avatar_color or '#555' }};">
+                        {{ msg.sender.name[0] | upper }}
+                    </div>
+                    <div class="thread-bubble">
+                        <div class="thread-header">
+                            <strong class="thread-sender">{{ msg.sender.name }}</strong>
+                            <span class="thread-time">{{ msg.created_at | timesince }}</span>
+                            {% if msg.priority != 'normal' %}
+                            <span class="thread-priority priority-{{ msg.priority }}">{{ msg.priority | title }}</span>
+                            {% endif %}
+                        </div>
+                        {% if msg.subject %}
+                        <div class="thread-subject">{{ msg.subject }}</div>
+                        {% endif %}
+                        <div class="thread-body">{{ msg.body }}</div>
+                        <div class="thread-footer">
+                            <span class="thread-to">→ {{ msg.receiver.name }}</span>
+                            {% if msg.read_at %}
+                            <span class="thread-read">✓ Read</span>
+                            {% endif %}
+                            {% if msg.acknowledged_at %}
+                            <span class="thread-acknowledged">✓✓ Acknowledged</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p>No messages in this conversation yet.</p>
+            </div>
+            {% endif %}
+
+            <!-- Reply Form -->
+            <form id="reply-form" class="reply-form" data-conv-id="{{ conversation.id }}">
+                <div class="reply-input-row">
+                    <div class="form-group">
+                        <select id="reply-to-agent" class="form-select form-select-sm" required>
+                            <option value="">Reply to...</option>
+                            {% for p in conversation.participants %}
+                            <option value="{{ p.id }}">{{ p.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group form-group-grow">
+                        <textarea id="reply-body" class="form-textarea form-textarea-sm" rows="2" placeholder="Type your reply..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">Send</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Participant List -->
+        <aside class="participants-sidebar">
+            <section class="dashboard-section">
+                <header class="section-header">
+                    <h2>Participants</h2>
+                </header>
+                <ul class="participants-list">
+                    {% for p in conversation.participants %}
+                    <li class="participant-item">
+                        <a href="{{ url_for('dashboard.agent_detail', agent_id=p.id) }}" class="participant-link">
+                            <span class="participant-avatar" style="background: {{ p.avatar_color or '#555' }};">
+                                {{ p.name[0] | upper }}
+                            </span>
+                            <div class="participant-info">
+                                <span class="participant-name">{{ p.name }}</span>
+                                <span class="participant-role">{{ p.role }}</span>
+                            </div>
+                            <span class="status-dot {{ p.status }}"></span>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </section>
+        </aside>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const replyForm = document.getElementById('reply-form');
+    if (replyForm) {
+        replyForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const convId = this.dataset.convId;
+            const toAgent = document.getElementById('reply-to-agent').value;
+            const body = document.getElementById('reply-body').value;
+            if (!toAgent || !body.trim()) return;
+
+            fetch('{{ url_for("dashboard.send_message_api") }}', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    from_agent_id: null,  // will be assigned server-side
+                    to_agent_id: parseInt(toAgent),
+                    conversation_id: parseInt(convId),
+                    subject: 'RE: ' + '{{ conversation.title | e }}',
+                    body: body,
+                    type: 'text',
+                    priority: 'normal'
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    document.getElementById('reply-body').value = '';
+                    if (typeof socket !== 'undefined' && socket.connected) {
+                        socket.emit('new_message', data.message);
+                    } else {
+                        location.reload();
+                    }
+                }
+            })
+            .catch(err => console.error('Reply failed:', err));
+        });
+    }
+});
+</script>
+{% endblock %}
