@@ -142,6 +142,14 @@ def _find_direct_conversation(agent1_id, agent2_id):
     return None
 
 
+def _build_subject_for_reply(original):
+    """Return ``Re: <subject>``, avoiding double prefixes."""
+    base = original.subject or "(no subject)"
+    if base.startswith("Re:"):
+        return base
+    return f"Re: {base}"
+
+
 def _create_direct_conversation(agent1_id, agent2_id):
     """Create a new direct conversation between two agents."""
     a1 = db.session.get(Agent, agent1_id)
@@ -373,14 +381,12 @@ def reply_to(message_id, body, msg_type="response", priority="normal"):
             if original is None:
                 return {"error": "Original message not found"}
 
-            agent_from = db.session.get(Agent, original.to_agent_id)
-            agent_to = db.session.get(Agent, original.from_agent_id)
-            if agent_from is None or agent_to is None:
-                return {"error": "Sender or recipient agent not found"}
+            agent_from_id = original.to_agent_id
+            agent_to_id = original.from_agent_id
 
             reply = _bus.send(
-                from_agent=agent_from.id,
-                to_agent=agent_to.id,
+                from_agent=agent_from_id,
+                to_agent=agent_to_id,
                 type=msg_type,
                 subject=f"Re: {original.subject or '(no subject)'}",
                 body=body,

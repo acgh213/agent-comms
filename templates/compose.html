@@ -9,6 +9,9 @@
     </div>
 
     <form id="compose-form" class="compose-form" novalidate>
+        {% if error %}
+        <div class="compose-error">{{ error }}</div>
+        {% endif %}
         <!-- From Agent -->
         <div class="form-row">
             <div class="form-group compose-from-group">

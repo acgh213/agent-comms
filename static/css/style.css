@@ -1207,3 +1207,164 @@ a:hover {
         font-size: 1.5rem;
     }
 }
+
+/* === Compose Page === */
+.compose-page {
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.compose-form {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+}
+
+.form-row {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+    margin-bottom: 0.75rem;
+}
+
+.form-row-narrow {
+    gap: 0.75rem;
+}
+
+.compose-from-group,
+.compose-to-group {
+    flex: 1;
+}
+
+.compose-arrow {
+    font-size: 1.4rem;
+    color: var(--text-muted);
+    padding-bottom: 0.5rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.compose-textarea {
+    min-height: 260px;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.compose-hint {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+.compose-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.compose-action-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.compose-status {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    opacity: 0;
+    transition: opacity var(--transition);
+}
+
+.compose-status-info {
+    opacity: 1;
+    color: var(--text-secondary);
+}
+
+.compose-status-error {
+    opacity: 1;
+    color: var(--color-busy);
+}
+
+.compose-status-success {
+    opacity: 1;
+    color: var(--color-online);
+}
+
+/* --- Draft Indicator --- */
+.draft-indicator {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: center;
+    margin-top: 0.5rem;
+    min-height: 1.2rem;
+    transition: color var(--transition);
+}
+
+.draft-saved {
+    color: var(--color-online);
+    animation: fadeIn 0.3s ease;
+}
+
+.draft-restored {
+    color: var(--color-vesper);
+    animation: fadeIn 0.3s ease;
+}
+
+.draft-cleared {
+    color: var(--text-muted);
+    animation: fadeIn 0.3s ease;
+}
+
+/* --- Discard button --- */
+#compose-discard {
+    color: var(--text-muted);
+}
+
+#compose-discard:hover {
+    color: var(--color-busy);
+    border-color: var(--color-busy);
+}
+
+/* --- Error banner --- */
+.compose-error {
+    background: rgba(255, 51, 85, 0.1);
+    border: 1px solid rgba(255, 51, 85, 0.25);
+    border-radius: var(--radius-sm);
+    color: var(--color-busy);
+    font-size: 0.85rem;
+    padding: 0.6rem 0.85rem;
+    margin-bottom: 1rem;
+    animation: fadeIn 0.3s ease;
+}
+
+/* --- Responsive --- */
+@media (max-width: 600px) {
+    .compose-page {
+        max-width: 100%;
+    }
+    .form-row {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .compose-arrow {
+        display: none;
+    }
+    .compose-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    .compose-action-right {
+        width: 100%;
+        flex-direction: column;
+    }
+    #compose-send {
+        width: 100%;
+    }
+}
