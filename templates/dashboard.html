@@ -131,7 +131,7 @@
                             <span class="conv-participants">{{ conv.participants | map(attribute='name') | join(', ') }}</span>
                         </div>
                         <div class="conv-meta">
-                            <span class="conv-msg-count">{{ conv.messages | length }} msgs</span>
+                            <span class="conv-msg-count">{{ conv.messages.count() }} msgs</span>
                             <span class="conv-time">{{ conv.updated_at | timesince }}</span>
                         </div>
                     </a>

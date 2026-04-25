@@ -30,6 +30,9 @@ def _human_time(dt):
     if dt is None:
         return "never"
     now = datetime.now(timezone.utc)
+    # SQLite stores datetimes without tzinfo, so if dt is naive, make now naive too
+    if dt.tzinfo is None:
+        now = now.replace(tzinfo=None)
     diff = now - dt
     secs = int(diff.total_seconds())
     if secs < 10:

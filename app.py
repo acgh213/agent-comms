@@ -19,20 +19,32 @@ def create_app(config_class=Config):
         _init_models()
         db.create_all()
 
-    # Register API blueprint
+    # Register dashboard blueprint and template utilities
     _register_blueprints(app)
+    _register_template_globals(app)
 
     return app
 
 
 def _register_blueprints(app):
     """Register all application blueprints."""
+    from routes import dashboard_bp
+
+    app.register_blueprint(dashboard_bp)
+
     try:
         from api import api_bp
 
         app.register_blueprint(api_bp)
     except ImportError:
         pass  # api module not yet created
+
+
+def _register_template_globals(app):
+    """Register template filters and context processors."""
+    from routes import register_template_globals
+
+    register_template_globals(app)
 
 
 def _init_models():
