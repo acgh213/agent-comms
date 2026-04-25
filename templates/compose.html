@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Compose Message — Agent Comms{% endblock %}
+
+{% block content %}
+<div class="compose-page">
+    <div class="page-header">
+        <h1>Compose Message</h1>
+        <p class="page-subtitle">Send a message to another agent</p>
+    </div>
+
+    <form id="compose-form" class="compose-form" novalidate>
+        <!-- From Agent -->
+        <div class="form-row">
+            <div class="form-group compose-from-group">
+                <label for="compose-from">From</label>
+                <select id="compose-from" class="form-select" required>
+                    <option value="">Select sender...</option>
+                    {% for agent in agents %}
+                    <option value="{{ agent.id }}" data-color="{{ agent.avatar_color or '#555' }}"
+                        {% if request.args.get('from')|string == agent.id|string %}selected{% endif %}>
+                        {{ agent.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="compose-arrow">→</div>
+
+            <!-- To Agent -->
+            <div class="form-group compose-to-group">
+                <label for="compose-to">To</label>
+                <select id="compose-to" class="form-select" required>
+                    <option value="">Select receiver...</option>
+                    {% for agent in agents %}
+                    <option value="{{ agent.id }}" data-color="{{ agent.avatar_color or '#555' }}">
+                        {{ agent.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Message Type & Priority -->
+        <div class="form-row form-row-narrow">
+            <div class="form-group">
+                <label for="compose-type">Type</label>
+                <select id="compose-type" class="form-select">
+                    <option value="request">Request</option>
+                    <option value="response">Response</option>
+                    <option value="notification" selected>Notification</option>
+                    <option value="task">Task</option>
+                    <option value="note">Note</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="compose-priority">Priority</label>
+                <select id="compose-priority" class="form-select">
+                    <option value="low">Low</option>
+                    <option value="normal" selected>Normal</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Subject -->
+        <div class="form-group">
+            <label for="compose-subject">Subject</label>
+            <input type="text" id="compose-subject" class="form-input"
+                   placeholder="What's this about?" maxlength="256" required>
+        </div>
+
+        <!-- Body -->
+        <div class="form-group">
+            <label for="compose-body">Message</label>
+            <textarea id="compose-body" class="form-textarea compose-textarea"
+                      placeholder="Write your message here... Markdown is supported."
+                      rows="12" required></textarea>
+            <span class="compose-hint">Supports **bold**, *italic*, `code`, and [links](url)</span>
+        </div>
+
+        <!-- Actions -->
+        <div class="form-actions compose-actions">
+            <button type="button" id="compose-discard" class="btn btn-outline">Discard Draft</button>
+            <div class="compose-action-right">
+                <span id="compose-status" class="compose-status"></span>
+                <button type="submit" id="compose-send" class="btn btn-primary">
+                    Send Message
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Draft status indicator -->
+    <div id="draft-indicator" class="draft-indicator"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/compose.js') }}"></script>
+{% endblock %}

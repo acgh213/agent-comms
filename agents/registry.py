@@ -2,9 +2,13 @@
 
 from agents.base import AgentDef
 from agents.coder import CODER
+from agents.devops import DEVOPS
 from agents.editor import EDITOR
 from agents.planner import PLANNER
+from agents.qa import QA
+from agents.researcher import RESEARCHER
 from agents.vesper import VESPER
+from agents.writer import WRITER
 
 
 class AgentRegistry:
@@ -37,9 +41,13 @@ class AgentRegistry:
         return len(self._agents)
 
 
-# Default registry pre-populated with the four standard agents
+# Default registry pre-populated with all eight standard agents
 default_registry = AgentRegistry()
 default_registry.register(VESPER)
 default_registry.register(CODER)
 default_registry.register(EDITOR)
 default_registry.register(PLANNER)
+default_registry.register(RESEARCHER)
+default_registry.register(QA)
+default_registry.register(DEVOPS)
+default_registry.register(WRITER)

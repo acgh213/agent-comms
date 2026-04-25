@@ -6,6 +6,7 @@ from flask import (
     Blueprint,
     abort,
     jsonify,
+    redirect,
     render_template,
     request,
 )
@@ -170,6 +171,57 @@ def conversation_detail(conv_id):
 # ---------------------------------------------------------------------------
 # Messages queue
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# Compose
+# ---------------------------------------------------------------------------
+
+
+@dashboard_bp.route("/compose", methods=["GET", "POST"])
+def compose():
+    """GET — render compose form. POST — handle form submission (fallback)."""
+    Agent, _, Message, _ = _get_models()
+    agents = Agent.query.order_by(Agent.name).all()
+
+    if request.method == "POST":
+        from_agent_id = request.form.get("from_agent_id", type=int)
+        to_agent_id = request.form.get("to_agent_id", type=int)
+        subject = request.form.get("subject", "").strip()
+        body = request.form.get("body", "").strip()
+        msg_type = request.form.get("type", "notification")
+        priority = request.form.get("priority", "normal")
+
+        if not all([from_agent_id, to_agent_id]):
+            return render_template("compose.html", agents=agents, error="From and To agents are required.")
+
+        sender = Agent.query.get(from_agent_id)
+        receiver = Agent.query.get(to_agent_id)
+        if not sender or not receiver:
+            return render_template("compose.html", agents=agents, error="Agent not found.")
+
+        from bus import MessageBus
+
+        bus = MessageBus(__import__("app").db)
+        conv = bus.create_conversation(
+            f"{sender.name} ↔ {receiver.name}",
+            [from_agent_id, to_agent_id],
+        )
+        msg = bus.send(
+            from_agent=from_agent_id,
+            to_agent=to_agent_id,
+            type=msg_type,
+            subject=subject or "(no subject)",
+            body=body,
+            priority=priority,
+            conversation_id=conv.id,
+        )
+        from urllib.parse import urlencode
+
+        return redirect(f"/conversation/{conv.id}")
+
+    from_agent_id = request.args.get("from", type=int)
+    return render_template("compose.html", agents=agents, from_agent_id=from_agent_id)
 
 
 @dashboard_bp.route("/messages/")

@@ -20,6 +20,7 @@
             <li><a href="{{ url_for('dashboard.index') }}" class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">Dashboard</a></li>
             <li><a href="{{ url_for('dashboard.agents_list') }}" class="nav-link {% if request.endpoint == 'dashboard.agents_list' %}active{% endif %}">Agents</a></li>
             <li><a href="{{ url_for('dashboard.messages_list') }}" class="nav-link {% if request.endpoint == 'dashboard.messages_list' %}active{% endif %}">Messages</a></li>
+            <li><a href="{{ url_for('dashboard.compose') }}" class="nav-link {% if request.endpoint == 'dashboard.compose' %}active{% endif %}">Compose</a></li>
             <li><a href="{{ url_for('dashboard.conversations_list') }}" class="nav-link {% if request.endpoint == 'dashboard.conversations_list' %}active{% endif %}">Conversations</a></li>
         </ul>
         <div class="nav-status" id="socket-status">

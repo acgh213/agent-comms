@@ -195,10 +195,19 @@ class TestPredefinedAgents:
         assert PLANNER.avatar_color == "#008080"
 
     def test_default_registry_has_all(self):
-        """Default registry contains all four agents."""
+        """Default registry contains all eight agents."""
         from agents.registry import default_registry
 
         agents = default_registry.list()
         ids = {a.id for a in agents}
-        assert ids == {"vesper", "coder", "editor", "planner"}
-        assert len(agents) == 4
+        assert ids == {
+            "vesper",
+            "coder",
+            "editor",
+            "planner",
+            "researcher",
+            "qa",
+            "devops",
+            "writer",
+        }
+        assert len(agents) == 8
