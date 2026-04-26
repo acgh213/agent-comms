@@ -1,0 +1,18 @@
+[Unit]
+Description=Agent Comms Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=exedev
+Group=exedev
+WorkingDirectory=/home/exedev/agent-comms
+Environment=HOME=/home/exedev
+Environment=VIRTUAL_ENV=/home/exedev/agent-comms/venv
+Environment=PATH=/home/exedev/agent-comms/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/home/exedev/agent-comms/venv/bin/python run.py
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
