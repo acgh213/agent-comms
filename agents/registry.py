@@ -167,6 +167,11 @@ def sync_from_profiles(db=None):
             if not agent.capabilities:
                 agent.capabilities = list(_extract_capabilities(profile_id))
 
+        # Sync preferred_model from AgentDef if available
+        agent_def = default_registry.get(profile_id)
+        if agent_def and agent_def.preferred_model:
+            agent.preferred_model = agent_def.preferred_model
+
         agent_records.append(agent)
 
     db.session.commit()
@@ -207,6 +212,47 @@ def sync_agents(db=None, registry=None):
     registry.register(DEVOPS)
     registry.register(WRITER)
 
+    # Also ensure code-defined agents without profiles exist in the DB
+    if db is None:
+        from app import db
+
+    from models import Agent
+    agent_names_in_db = {a.name for a in agents}
+
+    for agent_def in registry.list():
+        if agent_def.name not in agent_names_in_db:
+            role_map = {
+                "vesper": "creative",
+                "coder": "implementation",
+                "editor": "quality",
+                "planner": "architecture",
+                "researcher": "research",
+                "qa": "quality-assurance",
+                "devops": "infrastructure",
+                "writer": "content",
+            }
+            # Check DB directly in case name exists but wasn't in initial query
+            existing = db.session.query(Agent).filter_by(name=agent_def.name).first()
+            if existing:
+                # Update model if changed
+                if agent_def.preferred_model:
+                    existing.preferred_model = agent_def.preferred_model
+                agent_names_in_db.add(agent_def.name)
+                continue
+
+            agent = Agent(
+                name=agent_def.name,
+                role=role_map.get(agent_def.id, agent_def.role),
+                personality=agent_def.personality,
+                capabilities=agent_def.capabilities,
+                avatar_color=agent_def.avatar_color,
+                preferred_model=agent_def.preferred_model,
+                status="offline",
+            )
+            db.session.add(agent)
+            agents.append(agent)
+
+    db.session.commit()
     return agents
 
 

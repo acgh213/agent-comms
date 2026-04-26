@@ -16,4 +16,5 @@ PLANNER = AgentDef(
         "risk_assessment",
     ],
     avatar_color="#008080",
+    preferred_model="deepseek/deepseek-v4-flash",  # $0.14/$0.28 per 1M — good reasoning, 1M context
 )

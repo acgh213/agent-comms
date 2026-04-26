@@ -12,6 +12,7 @@ class AgentDef:
         personality="",
         capabilities=None,
         avatar_color="#888888",
+        preferred_model=None,
     ):
         self.id = id
         self.name = name
@@ -19,6 +20,7 @@ class AgentDef:
         self.personality = personality
         self.capabilities = capabilities or []
         self.avatar_color = avatar_color
+        self.preferred_model = preferred_model
 
     def to_dict(self):
         """Serialize to dictionary."""
@@ -29,6 +31,7 @@ class AgentDef:
             "personality": self.personality,
             "capabilities": self.capabilities,
             "avatar_color": self.avatar_color,
+            "preferred_model": self.preferred_model,
         }
 
     def __eq__(self, other):

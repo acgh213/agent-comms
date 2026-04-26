@@ -16,4 +16,5 @@ CODER = AgentDef(
         "test_writing",
     ],
     avatar_color="#E6E6FA",
+    preferred_model="deepseek/deepseek-v4-flash",  # $0.14/$0.28 per 1M — best coding value, 1M context
 )

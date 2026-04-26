@@ -16,4 +16,5 @@ VESPER = AgentDef(
         "content_generation",
     ],
     avatar_color="#FFD700",
+    preferred_model="xiaomi/mimo-v2.5",  # $0.25/$2.00 per 1M — creative quality
 )

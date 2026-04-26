@@ -16,4 +16,5 @@ EDITOR = AgentDef(
         "formatting",
     ],
     avatar_color="#FF007F",
+    preferred_model="openai/gpt-5-nano",  # $0.25/$2.00 per 1M — language quality
 )

@@ -40,6 +40,7 @@ class Agent(db.Model):
         db.String(32), nullable=False, default="offline"
     )
     avatar_color = db.Column(db.String(7), nullable=True)
+    preferred_model = db.Column(db.String(256), nullable=True)
     last_seen = db.Column(db.DateTime(timezone=True), nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),

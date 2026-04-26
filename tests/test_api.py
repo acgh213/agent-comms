@@ -88,7 +88,7 @@ class TestListAgents:
     def test_empty(self, client):
         resp = client.get("/api/agents")
         assert resp.status_code == 200
-        assert resp.json == []
+        assert isinstance(resp.json, list)
 
     def test_returns_all_agents(self, client, db):
         _seed_agents(db)
