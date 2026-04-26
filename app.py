@@ -1,6 +1,7 @@
 """Agent Comms — Flask application factory."""
 
 import logging
+import os
 import traceback
 from datetime import datetime, timezone
 
@@ -62,6 +63,12 @@ def create_app(config_class=Config):
             }), 503
 
     # ── Error handlers ───────────────────────────────────────────────
+    @app.errorhandler(403)
+    def forbidden(e):
+        if _wants_json():
+            return jsonify({"error": "forbidden", "status": 403}), 403
+        return _error_page("Forbidden", "You don't have access to this resource.", 403), 403
+
     @app.errorhandler(404)
     def not_found(e):
         if _wants_json():
@@ -80,6 +87,21 @@ def create_app(config_class=Config):
         if _wants_json():
             return jsonify({"error": "service unavailable", "status": 503}), 503
         return _error_page("Service Unavailable", "The service is temporarily unavailable.", 503), 503
+
+    # ── Auth middleware ───────────────────────────────────────────────
+    AUTH_EMAIL = os.environ.get("AUTH_EMAIL", "cassie@omg.lol")
+
+    @app.before_request
+    def _auth_check():
+        """Verify exe.dev auth header. Health endpoint and tests bypass auth."""
+        from flask import request, abort
+        if request.path == "/health":
+            return  # health check bypasses auth
+        if app.config.get("TESTING"):
+            return  # tests bypass auth
+        email = request.headers.get("X-ExeDev-Email", "")
+        if email != AUTH_EMAIL:
+            abort(403)
 
     # ── Before-request: catch DB errors early ────────────────────────
     @app.before_request
