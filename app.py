@@ -2,7 +2,6 @@
 
 import logging
 import os
-import traceback
 from datetime import datetime, timezone
 
 from flask import Flask, jsonify
@@ -16,10 +15,16 @@ socketio = SocketIO()
 
 log = logging.getLogger("agent-comms")
 
+# Absolute DB path — never relative, never fragile
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "instance", "agent_comms.db")
+
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+
+    # Force absolute DB path — this is why it keeps collapsing
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_PATH}"
 
     # Logging
     logging.basicConfig(
@@ -34,7 +39,26 @@ def create_app(config_class=Config):
     with app.app_context():
         import models  # noqa: F401 — registers Agent, Conversation, Message, Note
         db.create_all()
-        log.info("Database tables verified")
+
+        # Verify tables exist, recreate if missing
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        tables = inspector.get_table_names()
+        required = {"agent", "conversation", "message", "note", "conversation_participants"}
+        missing = required - set(tables)
+        if missing:
+            log.warning("Missing tables %s, recreating all", missing)
+            db.create_all()
+
+        # Verify agent table has preferred_model column
+        if "agent" in tables:
+            columns = {col["name"] for col in inspector.get_columns("agent")}
+            if "preferred_model" not in columns:
+                log.warning("Missing preferred_model column, altering table")
+                db.session.execute(db.text("ALTER TABLE agent ADD COLUMN preferred_model VARCHAR(256)"))
+                db.session.commit()
+
+        log.info("Database verified at %s", DB_PATH)
 
     # Register blueprints
     _register_blueprints(app)
@@ -52,6 +76,7 @@ def create_app(config_class=Config):
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "agents": agent_count,
                 "database": "ok",
+                "db_path": DB_PATH,
             })
         except Exception as e:
             return jsonify({
@@ -96,9 +121,9 @@ def create_app(config_class=Config):
         """Verify exe.dev auth header. Health endpoint and tests bypass auth."""
         from flask import request, abort
         if request.path == "/health":
-            return  # health check bypasses auth
+            return
         if app.config.get("TESTING"):
-            return  # tests bypass auth
+            return
         email = request.headers.get("X-ExeDev-Email", "")
         if email != AUTH_EMAIL:
             abort(403)
@@ -106,7 +131,6 @@ def create_app(config_class=Config):
     # ── Before-request: catch DB errors early ────────────────────────
     @app.before_request
     def _check_db():
-        """Verify DB is accessible before processing any request."""
         try:
             db.session.execute(db.text("SELECT 1"))
         except Exception:
@@ -114,20 +138,12 @@ def create_app(config_class=Config):
             from flask import abort
             abort(503)
 
-    # ── After-request: log slow requests ─────────────────────────────
-    @app.after_request
-    def _log_request(response):
-        if response.status_code >= 500:
-            log.error("%s %s → %s", request_method(), request_path(), response.status_code)
-        return response
-
     return app
 
 
 # ── Helpers ──────────────────────────────────────────────────────────
 
 def _wants_json():
-    """Check if the request prefers JSON (API call vs browser)."""
     from flask import request
     accept = request.headers.get("Accept", "")
     path = request.path
@@ -139,7 +155,6 @@ def _wants_json():
 
 
 def _error_page(title, message, code):
-    """Render a minimal dark-themed error page."""
     return f"""<!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
@@ -158,31 +173,11 @@ def _error_page(title, message, code):
             min-height: 100vh;
             text-align: center;
         }}
-        .error-container {{
-            max-width: 480px;
-            padding: 3rem;
-        }}
-        .error-code {{
-            font-size: 4rem;
-            font-weight: 200;
-            color: #FF007F;
-            margin-bottom: 1rem;
-        }}
-        .error-title {{
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 0.75rem;
-        }}
-        .error-message {{
-            color: #888;
-            line-height: 1.6;
-            margin-bottom: 2rem;
-        }}
-        a {{
-            color: #FFD700;
-            text-decoration: none;
-            border-bottom: 1px solid rgba(255, 215, 0, 0.3);
-        }}
+        .error-container {{ max-width: 480px; padding: 3rem; }}
+        .error-code {{ font-size: 4rem; font-weight: 200; color: #FF007F; margin-bottom: 1rem; }}
+        .error-title {{ font-size: 1.5rem; font-weight: 600; margin-bottom: 0.75rem; }}
+        .error-message {{ color: #888; line-height: 1.6; margin-bottom: 2rem; }}
+        a {{ color: #FFD700; text-decoration: none; border-bottom: 1px solid rgba(255,215,0,0.3); }}
         a:hover {{ border-bottom-color: #FFD700; }}
     </style>
 </head>
@@ -197,21 +192,9 @@ def _error_page(title, message, code):
 </html>"""
 
 
-def request_method():
-    from flask import request
-    return request.method
-
-
-def request_path():
-    from flask import request
-    return request.path
-
-
 def _register_blueprints(app):
-    """Register all application blueprints."""
     from routes import dashboard_bp
     app.register_blueprint(dashboard_bp)
-
     try:
         from api import api_bp
         app.register_blueprint(api_bp)
@@ -220,6 +203,5 @@ def _register_blueprints(app):
 
 
 def _register_template_globals(app):
-    """Register template filters and context processors."""
     from routes import register_template_globals
     register_template_globals(app)
